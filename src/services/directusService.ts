@@ -68,6 +68,9 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
+  },
+  params: {
+    version: '9.0'
   }
 });
 
@@ -253,10 +256,6 @@ export const DirectusService = {
         console.log(`${functionName} Fetch URL: ${fetchUrl}`);
         
         const response = await fetch(fetchUrl, { 
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
           mode: 'cors'
         });
 

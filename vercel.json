@@ -30,7 +30,12 @@
   "rewrites": [
     {
       "source": "/api/directus/:path*",
-      "destination": "https://cms.reppit.stackingbits.dev/:path*"
+      "destination": "https://cms.reppit.stackingbits.dev/:path*",
+      "headers": {
+        "Authorization": "Bearer TQMOJkDCRf0I9CcGxW0LtOKS_-kOmhfE",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      }
     }
   ]
 } 
