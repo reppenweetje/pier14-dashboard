@@ -81,7 +81,7 @@ const axiosInstance = axios.create({
 // Debug interceptors met meer details
 axiosInstance.interceptors.request.use(request => {
   console.log('Starting Request (DETAILED):', {
-    fullUrl: request.baseURL + request.url,
+    fullUrl: `${request.baseURL || ''}${request.url || ''}`,
     method: request.method,
     headers: request.headers,
     params: request.params,
