@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/date-fns": "^2.5.3",
+    "@types/react-query": "^1.2.8",
+    "date-fns": "^4.1.0",
+    "react-query": "^3.39.3"
+  }
+}
