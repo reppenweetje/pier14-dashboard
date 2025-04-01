@@ -64,10 +64,9 @@ const getDateRange = (period: string): string => {
 };
 
 const axiosInstance = axios.create({
-  // Gebruik relatieve URLs zodat de proxy wordt gebruikt
-  baseURL: '/items',
+  baseURL: `${process.env.REACT_APP_DIRECTUS_API_URL}/items`,
   headers: {
-    'Authorization': 'Bearer TQMOJkDCRf0I9CcGxW0LtOKS_-kOmhfE',
+    'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_API_KEY}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
@@ -288,7 +287,7 @@ export const DirectusService = {
       
       try {
         // Bouw query URL inclusief period filter
-        let fetchUrl = '/items/pinned_units?fields[]=unit_id&limit=1000';
+        let fetchUrl = `${process.env.REACT_APP_DIRECTUS_API_URL}/items/pinned_units?fields[]=unit_id&limit=1000`;
         if (period !== 'all') {
           fetchUrl += `&filter[created_at][_gte]=${encodeURIComponent(startDate)}`;
         }
@@ -297,7 +296,7 @@ export const DirectusService = {
         
         const response = await fetch(fetchUrl, {
           headers: {
-            'Authorization': 'Bearer TQMOJkDCRf0I9CcGxW0LtOKS_-kOmhfE',
+            'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_API_KEY}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
