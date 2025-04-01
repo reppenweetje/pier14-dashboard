@@ -64,7 +64,7 @@ const getDateRange = (period: string): string => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: `${process.env.REACT_APP_API_URL}/items`,
+  baseURL: `/api/directus/items`,
   headers: {
     'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
     'Content-Type': 'application/json',
@@ -76,6 +76,8 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(request => {
   console.log('🚀 API Request:', {
     url: request.url,
+    baseURL: request.baseURL,
+    fullUrl: `${request.baseURL || ''}${request.url || ''}`,
     method: request.method,
     headers: request.headers,
     params: request.params
@@ -109,7 +111,7 @@ axiosInstance.interceptors.response.use(
 // Test functie om API bereikbaarheid te controleren
 const testApi = async (route: string) => {
   try {
-    console.log(`🔍 Testing API connection to ${route}...`);
+    console.log(`🔍 Testing API connection to ${route} via proxy...`);
     const response = await axiosInstance.get(route, { 
       params: {
         'limit': 1
@@ -241,10 +243,10 @@ export const DirectusService = {
     }
 
     // Fallback: Probeer directe fetch
-    console.log(`${functionName} Poging 2: Direct fetch...`);
+    console.log(`${functionName} Poging 2: Direct fetch via proxy...`);
     try {
         const startDate = getDateRange(period);
-        let fetchUrl = `${process.env.REACT_APP_API_URL}/items/pinned_units?fields[]=unit_id&limit=1000`;
+        let fetchUrl = `/api/directus/items/pinned_units?fields[]=unit_id&limit=1000`;
         if (period !== 'all') {
           fetchUrl += `&filter[created_at][_gte]=${encodeURIComponent(startDate)}`;
         }

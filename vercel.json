@@ -26,5 +26,11 @@
       "src": ".*",
       "dest": "/index.html"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/directus/:path*",
+      "destination": "https://cms.reppit.stackingbits.dev/:path*"
+    }
   ]
 } 
