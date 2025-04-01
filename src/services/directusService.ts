@@ -74,47 +74,37 @@ const axiosInstance = axios.create({
 
 // Debug interceptors met meer details
 axiosInstance.interceptors.request.use(request => {
-  console.log('Starting Request (DETAILED):', {
+  console.log('🚀 API Request:', {
+    url: request.url,
     fullUrl: `${request.baseURL || ''}${request.url || ''}`,
     method: request.method,
     headers: request.headers,
     params: request.params,
-    data: request.data
+    data: request.data,
+    envUrl: process.env.REACT_APP_DIRECTUS_API_URL,
+    envToken: process.env.REACT_APP_DIRECTUS_TOKEN?.substring(0, 5) + '...'
   });
   return request;
 });
 
 axiosInstance.interceptors.response.use(
   response => {
-    console.log('Response Success (DETAILED):', {
+    console.log('✅ API Response Success:', {
+      url: response.config.url,
       status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      data: response.data,
-      config: {
-        url: response.config.url,
-        method: response.config.method,
-        params: response.config.params
-      }
+      data: response.data
     });
     return response;
   },
   error => {
-    console.error('Response Error (DETAILED):', {
+    console.error('❌ API Response Error:', {
+      url: error.config?.url,
       message: error.message,
-      code: error.code,
-      response: error.response ? {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        headers: error.response.headers
-      } : 'No response',
-      config: error.config ? {
-        url: error.config.url,
-        method: error.config.method,
-        params: error.config.params,
-        headers: error.config.headers
-      } : 'No config'
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      envUrl: process.env.REACT_APP_DIRECTUS_API_URL,
+      envToken: process.env.REACT_APP_DIRECTUS_TOKEN?.substring(0, 5) + '...'
     });
     return Promise.reject(error);
   }
@@ -124,31 +114,45 @@ axiosInstance.interceptors.response.use(
 const testApi = async (route: string) => {
   try {
     console.log(`🔍 Testing API connection to ${route}...`);
+    const fullUrl = `${process.env.REACT_APP_DIRECTUS_API_URL}${route}`;
+    console.log(`📡 Full URL: ${fullUrl}`);
     const response = await axiosInstance.get(route, {
       params: {
         'limit': 1
       }
     });
-    console.log(`✅ API Connection to ${route} successful, status: ${response.status}`);
+    console.log(`✅ API Connection to ${route} successful:`, {
+      status: response.status,
+      data: response.data
+    });
     return { success: true, status: response.status };
   } catch (error: any) {
-    console.error(`❌ API Connection to ${route} failed:`, error.message);
+    console.error(`❌ API Connection to ${route} failed:`, {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      envUrl: process.env.REACT_APP_DIRECTUS_API_URL,
+      envToken: process.env.REACT_APP_DIRECTUS_TOKEN?.substring(0, 5) + '...'
+    });
     return { success: false, status: error.response?.status, message: error.message };
   }
 };
 
 export const DirectusService = {
   async getTotalRegistrations(period: string): Promise<{ total: number; nautical: number }> {
+    console.log('📊 Getting total registrations:', { period });
     try {
       // Test eerst de API verbinding
       const apiTest = await testApi('/customers');
+      console.log('🔍 API Test result:', apiTest);
+      
       if (!apiTest.success) {
-        console.error('Could not connect to API');
+        console.error('❌ Could not connect to API');
         return { total: 0, nautical: 0 };
       }
 
       const startDate = getDateRange(period);
-      console.log('📊 Fetching total registrations:', { period, startDate });
+      console.log('📅 Date range:', { period, startDate });
 
       // Haal alle registraties op met nautische informatie
       const response = await axiosInstance.get<DirectusResponse<{ id: number; nautical: string | boolean }>>('/customers', {
@@ -167,15 +171,15 @@ export const DirectusService = {
         return reg.nautical?.toLowerCase() === 'ja';
       }).length;
 
-      console.log('📝 Registrations found for period:', {
+      console.log('📝 Registration results:', {
         total,
         nautical,
-        firstFewItems: registrations.slice(0, 3) // Log eerste paar items voor debug
+        firstFewItems: registrations.slice(0, 3)
       });
 
       return { total, nautical };
     } catch (error) {
-      console.error('Error details:', {
+      console.error('❌ Error getting total registrations:', {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });

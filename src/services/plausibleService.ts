@@ -46,6 +46,45 @@ const axiosInstance = axios.create({
   }
 });
 
+// Debug interceptors
+axiosInstance.interceptors.request.use(request => {
+  console.log('🔍 Plausible Request:', {
+    url: request.url,
+    fullUrl: `${request.baseURL || ''}${request.url || ''}`,
+    method: request.method,
+    headers: request.headers,
+    params: request.params,
+    envUrl: process.env.REACT_APP_PLAUSIBLE_API_URL,
+    envToken: process.env.REACT_APP_PLAUSIBLE_TOKEN?.substring(0, 5) + '...',
+    siteId: SITE_ID
+  });
+  return request;
+});
+
+axiosInstance.interceptors.response.use(
+  response => {
+    console.log('✅ Plausible Response Success:', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
+  error => {
+    console.error('❌ Plausible Response Error:', {
+      url: error.config?.url,
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      envUrl: process.env.REACT_APP_PLAUSIBLE_API_URL,
+      envToken: process.env.REACT_APP_PLAUSIBLE_TOKEN?.substring(0, 5) + '...',
+      siteId: SITE_ID
+    });
+    return Promise.reject(error);
+  }
+);
+
 const getDateRange = (period: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
