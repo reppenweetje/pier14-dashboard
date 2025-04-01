@@ -69,7 +69,8 @@ const axiosInstance = axios.create({
     'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
+  },
+  withCredentials: true // Belangrijk voor CORS met credentials
 });
 
 // Debug interceptors met meer details
@@ -256,7 +257,9 @@ export const DirectusService = {
             'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
-          }
+          },
+          mode: 'cors',
+          credentials: 'include'
         });
 
         if (!response.ok) {
