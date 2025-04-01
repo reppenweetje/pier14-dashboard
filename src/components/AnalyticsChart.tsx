@@ -10,8 +10,6 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import { format } from 'date-fns';
-import { nl } from 'date-fns/locale/nl';
 
 interface TimeseriesDataPoint {
   date: string;

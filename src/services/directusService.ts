@@ -23,11 +23,6 @@ interface DirectusResponse<T> {
   data: T[];
 }
 
-interface PinnedUnitInfo {
-  id: number;
-  unit_id: string;
-}
-
 interface RegistrationTimeseriesPoint {
   date: string; // Behoud YYYY-MM-DD formaat voor de keys en sortering
   count: number;
@@ -420,21 +415,4 @@ export const DirectusService = {
       return []; 
     }
   }
-};
-
-// Helper functie om unit_id's te tellen en sorteren voor getTopFavorites
-function processTopUnits(items: Array<{ unit_id: string }>): FavoriteCount[] {
-  // Tel unit_id's
-  const counts: Record<string, number> = {};
-  for (const item of items) {
-    if (item.unit_id) {
-      counts[item.unit_id] = (counts[item.unit_id] || 0) + 1;
-    }
-  }
-  
-  // Sorteer en limiteer tot top 5
-  return Object.entries(counts)
-    .map(([item, count]) => ({ item, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-} 
+}; 

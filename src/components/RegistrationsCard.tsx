@@ -22,7 +22,7 @@ const soundFiles = [
 ];
 
 export const RegistrationsCard: React.FC<RegistrationsCardProps> = ({ period }) => {
-  const { data: registrations, isLoading, error } = useQuery(
+  const { data: registrations, isLoading } = useQuery(
     ['registrations', period],
     () => DirectusService.getTotalRegistrations(period),
     {

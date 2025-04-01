@@ -6,7 +6,6 @@ import { theme } from './theme';
 import { Dashboard } from './components/Dashboard';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { Login } from './components/Login';
-import { Box } from '@mui/material';
 
 const queryClient = new QueryClient({
   defaultOptions: {
