@@ -74,15 +74,13 @@ const axiosInstance = axios.create({
 
 // Debug interceptors met meer details
 axiosInstance.interceptors.request.use(request => {
-  console.log('🚀 API Request:', {
-    url: request.url,
-    fullUrl: `${request.baseURL || ''}${request.url || ''}`,
+  console.log('🚀 API Request Interceptor:', {
+    configuredBaseURL: axiosInstance.defaults.baseURL,
+    requestUrl: request.url,
+    fullCalculatedUrl: `${axiosInstance.defaults.baseURL || ''}${request.url || ''}`,
     method: request.method,
     headers: request.headers,
-    params: request.params,
-    data: request.data,
-    envUrl: process.env.REACT_APP_DIRECTUS_API_URL,
-    envToken: process.env.REACT_APP_DIRECTUS_TOKEN?.substring(0, 5) + '...'
+    params: request.params
   });
   return request;
 });
@@ -112,27 +110,25 @@ axiosInstance.interceptors.response.use(
 
 // Test functie om API bereikbaarheid te controleren
 const testApi = async (route: string) => {
+  const proxyRoute = `/api/directus${route}`;
   try {
-    console.log(`🔍 Testing API connection to ${route} via proxy...`);
-    const fullUrl = `/api/directus${route}`;
-    console.log(`📡 Full URL via Proxy: ${fullUrl}`);
-    const response = await axiosInstance.get(route, {
+    console.log(`🔍 Testing API connection via proxy route: ${proxyRoute}`);
+    // Gebruik axiosInstance die geconfigureerd is met proxy baseURL
+    const response = await axiosInstance.get(route, { 
       params: {
         'limit': 1
       }
     });
-    console.log(`✅ API Connection to ${route} via proxy successful:`, {
+    console.log(`✅ API Connection via proxy route ${proxyRoute} successful:`, {
       status: response.status,
       data: response.data
     });
     return { success: true, status: response.status };
   } catch (error: any) {
-    console.error(`❌ API Connection to ${route} via proxy failed:`, {
+    console.error(`❌ API Connection via proxy route ${proxyRoute} failed:`, {
       message: error.message,
       status: error.response?.status,
-      data: error.response?.data,
-      proxyUrl: `/api/directus${route}`,
-      envToken: process.env.REACT_APP_DIRECTUS_TOKEN?.substring(0, 5) + '...'
+      data: error.response?.data
     });
     return { success: false, status: error.response?.status, message: error.message };
   }
@@ -212,109 +208,71 @@ export const DirectusService = {
   },
 
   async getTopFavorites(period: string): Promise<FavoriteCount[]> {
-    const functionName = "[TopFavorites_FixedAPI]";
+    const functionName = "[TopFavorites_FixedAPI_Proxy]"; // Update functienaam
     
     try {
-      // Bereken startDate voordat we API routes testen
       const startDate = getDateRange(period);
       console.log(`${functionName} Fetching for period: ${period}, Start date: ${startDate}`);
       
-      // Test eerst alle mogelijke API routes
-      const tests = [
-        await testApi('/pinned_units'),
-        await testApi('/items/pinned_units'),
-        await testApi('/collections/pinned_units')
-      ];
-      
-      console.log(`${functionName} API tests results:`, tests);
-      
-      // Zoek een succesvolle route
-      const successfulTest = tests.find(t => t.success);
-      const successfulRoute = successfulTest ? 
-        (successfulTest === tests[0] ? '/pinned_units' : 
-         successfulTest === tests[1] ? '/items/pinned_units' : 
-         '/collections/pinned_units') : null;
-      
-      // Als een route werkt, gebruik deze
-      if (successfulRoute) {
-        console.log(`${functionName} Gevonden werkende route: ${successfulRoute}`);
-        
-        // Maak parameters inclusief datumfilter
-        const params: Record<string, any> = {
-          'fields': ['unit_id']
-        };
-        
-        // Voeg datum filter toe als period niet 'all' is
-        if (period !== 'all') {
-          // Test twee verschillende filtermethoden
-          if (successfulRoute.includes('/items/')) {
-            // Voor items API-stijl
-            params['filter[created_at][_gte]'] = startDate;
-          } else {
-            // Voor gewone collectie-stijl
-            params['filter'] = { created_at: { _gte: startDate } };
+      // Probeer eerst met Axios (die de proxy baseURL zou moeten gebruiken)
+      console.log(`${functionName} Poging 1: Axios request...`);
+      const axiosResponse = await axiosInstance.get<DirectusResponse<any>>('/pinned_units', {
+        params: {
+          'fields': ['unit_id'],
+          'limit': 1000,
+          ...(period !== 'all' && { 'filter[created_at][_gte]': startDate })
+        }
+      });
+
+      if (axiosResponse.data?.data) {
+        console.log(`${functionName} Axios request successful! Items:`, axiosResponse.data.data.length);
+        // Verwerk resultaten
+        const counts: Record<string, number> = {};
+        for (const item of axiosResponse.data.data) {
+          if (item.unit_id) {
+            counts[item.unit_id] = (counts[item.unit_id] || 0) + 1;
           }
         }
-        
-        // Stel limiet in
-        params['limit'] = 1000;
-        
-        console.log(`${functionName} API request params:`, params);
-        
-        const response = await axiosInstance.get<DirectusResponse<any>>(successfulRoute, { params });
-        
-        if (response.data.data && response.data.data.length > 0) {
-          // Verwerk de resultaten
-          console.log(`${functionName} API met werkende route gaf ${response.data.data.length} items voor periode ${period}`);
-          
-          const counts: Record<string, number> = {};
-          for (const item of response.data.data) {
-            if (item.unit_id) {
-              counts[item.unit_id] = (counts[item.unit_id] || 0) + 1;
-            }
-          }
-          
-          const sortedFavorites = Object.entries(counts)
-            .map(([item, count]) => ({ item, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-          
-          console.log(`${functionName} Resultaat via werkende route voor periode ${period}:`, sortedFavorites);
-          return sortedFavorites;
-        } else {
-          console.log(`${functionName} API gaf lege resultaten voor periode ${period}`);
-        }
+        return Object.entries(counts)
+          .map(([item, count]) => ({ item, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+      } else {
+        console.log(`${functionName} Axios request returned no data or failed structure.`);
       }
-      
-      // Fallback: gebruik CORS-vriendelijke fetch als axios mislukt
-      console.log(`${functionName} Probeer directe fetch zonder axios...`);
-      
-      try {
-        // Bouw query URL inclusief period filter
-        let fetchUrl = `/api/directus/items/pinned_units?fields[]=unit_id&limit=1000`;
+
+    } catch (axiosError: any) {
+        console.error(`${functionName} Axios request failed:`, axiosError.message);
+    }
+
+    // Fallback: Probeer directe fetch via de proxy URL
+    console.log(`${functionName} Poging 2: Direct fetch via proxy...`);
+    try {
+        const startDate = getDateRange(period); // Zorg dat startDate hier beschikbaar is
+        let fetchUrl = `/api/directus/items/pinned_units?fields[]=unit_id&limit=1000`; // Forceer proxy route
         if (period !== 'all') {
           fetchUrl += `&filter[created_at][_gte]=${encodeURIComponent(startDate)}`;
         }
         
         console.log(`${functionName} Fetch URL via Proxy: ${fetchUrl}`);
         
-        const response = await fetch(fetchUrl, {
+        const response = await fetch(fetchUrl, { 
           headers: {
             'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
         });
-        
+
         if (!response.ok) {
-          throw new Error(`Fetch failed with status ${response.status}`);
+          throw new Error(`Fetch failed with status ${response.status} ${response.statusText}`);
         }
 
         const result = await response.json();
         
         if (result.data && result.data.length > 0) {
           console.log(`${functionName} Direct fetch via proxy successful!`, result.data.length);
-          // Verwerk resultaten (aanname: processTopUnits bestaat niet meer, direct verwerken)
+          // Verwerk resultaten
           const counts: Record<string, number> = {};
           for (const item of result.data) {
             if (item.unit_id) {
@@ -327,33 +285,20 @@ export const DirectusService = {
             .slice(0, 5);
         } else {
           console.log(`${functionName} Direct fetch via proxy returned no data.`);
-          // Fallback naar dummy data alsnog nodig
         }
       } catch (fetchError: any) {
-        console.error(`${functionName} Fetch error via proxy:`, fetchError);
-        // Fallback naar dummy data
+        console.error(`${functionName} Fetch error via proxy:`, fetchError.message);
       }
-      
-      // Als echt niets werkt, gebruik de dummy data
-      console.log(`${functionName} Alle API-pogingen mislukt, terugvallen op dummy data`);
-      return [
-        { item: "172", count: 4 },
-        { item: "10", count: 4 },  
-        { item: "8", count: 4 },   
-        { item: "165", count: 2 }, 
-        { item: "9", count: 2 }    
-      ];
-      
-    } catch (error: any) {
-      console.error(`${functionName} Error:`, error.message);
-      return [
-        { item: "172", count: 4 },
-        { item: "10", count: 4 },
-        { item: "8", count: 4 },
-        { item: "165", count: 2 },
-        { item: "9", count: 2 }
-      ];
-    }
+
+    // Als alles faalt, fallback naar dummy data
+    console.log(`${functionName} Alle API-pogingen mislukt, terugvallen op dummy data`);
+    return [
+      { item: '64', count: 10 },
+      { item: '19', count: 8 },
+      { item: '33', count: 7 },
+      { item: '5', count: 5 },
+      { item: '12', count: 3 },
+    ];
   },
 
   async getRegistrationTimeseries(period: string): Promise<RegistrationTimeseriesPoint[]> {
