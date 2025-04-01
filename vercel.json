@@ -9,6 +9,12 @@
       }
     }
   ],
+  "rewrites": [
+    {
+      "source": "/api/directus/(.*)",
+      "destination": "https://cms.reppit.stackingbits.dev/$1"
+    }
+  ],
   "routes": [
     {
       "src": "/static/(.*)",

@@ -64,7 +64,7 @@ const getDateRange = (period: string): string => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: `${process.env.REACT_APP_DIRECTUS_API_URL}/items`,
+  baseURL: '/api/directus/items',
   headers: {
     'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
     'Content-Type': 'application/json',
@@ -113,25 +113,25 @@ axiosInstance.interceptors.response.use(
 // Test functie om API bereikbaarheid te controleren
 const testApi = async (route: string) => {
   try {
-    console.log(`🔍 Testing API connection to ${route}...`);
-    const fullUrl = `${process.env.REACT_APP_DIRECTUS_API_URL}${route}`;
-    console.log(`📡 Full URL: ${fullUrl}`);
+    console.log(`🔍 Testing API connection to ${route} via proxy...`);
+    const fullUrl = `/api/directus${route}`;
+    console.log(`📡 Full URL via Proxy: ${fullUrl}`);
     const response = await axiosInstance.get(route, {
       params: {
         'limit': 1
       }
     });
-    console.log(`✅ API Connection to ${route} successful:`, {
+    console.log(`✅ API Connection to ${route} via proxy successful:`, {
       status: response.status,
       data: response.data
     });
     return { success: true, status: response.status };
   } catch (error: any) {
-    console.error(`❌ API Connection to ${route} failed:`, {
+    console.error(`❌ API Connection to ${route} via proxy failed:`, {
       message: error.message,
       status: error.response?.status,
       data: error.response?.data,
-      envUrl: process.env.REACT_APP_DIRECTUS_API_URL,
+      proxyUrl: `/api/directus${route}`,
       envToken: process.env.REACT_APP_DIRECTUS_TOKEN?.substring(0, 5) + '...'
     });
     return { success: false, status: error.response?.status, message: error.message };
@@ -291,12 +291,12 @@ export const DirectusService = {
       
       try {
         // Bouw query URL inclusief period filter
-        let fetchUrl = `${process.env.REACT_APP_DIRECTUS_API_URL}/items/pinned_units?fields[]=unit_id&limit=1000`;
+        let fetchUrl = `/api/directus/items/pinned_units?fields[]=unit_id&limit=1000`;
         if (period !== 'all') {
           fetchUrl += `&filter[created_at][_gte]=${encodeURIComponent(startDate)}`;
         }
         
-        console.log(`${functionName} Fetch URL: ${fetchUrl}`);
+        console.log(`${functionName} Fetch URL via Proxy: ${fetchUrl}`);
         
         const response = await fetch(fetchUrl, {
           headers: {
