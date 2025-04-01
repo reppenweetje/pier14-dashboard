@@ -38,6 +38,14 @@ const API_KEY = process.env.REACT_APP_PLAUSIBLE_API_KEY;
 const SITE_ID = process.env.REACT_APP_PLAUSIBLE_SITE_ID;
 const BASE_URL = process.env.REACT_APP_PLAUSIBLE_API_URL;
 
+const axiosInstance = axios.create({
+  baseURL: process.env.REACT_APP_PLAUSIBLE_API_URL,
+  headers: {
+    'Authorization': `Bearer ${process.env.REACT_APP_PLAUSIBLE_TOKEN}`,
+    'Content-Type': 'application/json'
+  }
+});
+
 const getDateRange = (period: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
