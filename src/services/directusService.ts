@@ -66,7 +66,6 @@ const getDateRange = (period: string): string => {
 const axiosInstance = axios.create({
   baseURL: `/api/directus/items`,
   headers: {
-    'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
@@ -255,7 +254,6 @@ export const DirectusService = {
         
         const response = await fetch(fetchUrl, { 
           headers: {
-            'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
