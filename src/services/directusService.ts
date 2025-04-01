@@ -306,29 +306,32 @@ export const DirectusService = {
           }
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`${functionName} Fetch methode succesvol! Items:`, data.data.length);
-          
+        if (!response.ok) {
+          throw new Error(`Fetch failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.data && result.data.length > 0) {
+          console.log(`${functionName} Direct fetch via proxy successful!`, result.data.length);
+          // Verwerk resultaten (aanname: processTopUnits bestaat niet meer, direct verwerken)
           const counts: Record<string, number> = {};
-          for (const item of data.data) {
+          for (const item of result.data) {
             if (item.unit_id) {
               counts[item.unit_id] = (counts[item.unit_id] || 0) + 1;
             }
           }
-          
-          const sortedFavorites = Object.entries(counts)
+          return Object.entries(counts)
             .map(([item, count]) => ({ item, count }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
-          
-          console.log(`${functionName} Resultaat via fetch:`, sortedFavorites);
-          return sortedFavorites;
         } else {
-          console.error(`${functionName} Fetch mislukt met status:`, response.status);
+          console.log(`${functionName} Direct fetch via proxy returned no data.`);
+          // Fallback naar dummy data alsnog nodig
         }
-      } catch (fetchError) {
-        console.error(`${functionName} Fetch error:`, fetchError);
+      } catch (fetchError: any) {
+        console.error(`${functionName} Fetch error via proxy:`, fetchError);
+        // Fallback naar dummy data
       }
       
       // Als echt niets werkt, gebruik de dummy data
