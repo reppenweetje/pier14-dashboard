@@ -3,33 +3,17 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/directus/(.*)",
-      "destination": "https://cms.reppit.stackingbits.dev/$1"
+      "use": "@vercel/node",
+      "config": { "maxLambdaSize": "50mb" }
     }
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
+      "src": "^/static/(.*)",
       "dest": "/static/$1"
     },
     {
-      "src": "/favicon.ico",
-      "dest": "/favicon.ico"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/manifest.json"
-    },
-    {
-      "src": "/(.*)",
+      "src": ".*",
       "dest": "/index.html"
     }
   ]

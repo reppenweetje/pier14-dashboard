@@ -64,7 +64,7 @@ const getDateRange = (period: string): string => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: '/api/directus/items',
+  baseURL: `${process.env.REACT_APP_API_URL}/items`,
   headers: {
     'Authorization': `Bearer ${process.env.REACT_APP_DIRECTUS_TOKEN}`,
     'Content-Type': 'application/json',
@@ -74,10 +74,8 @@ const axiosInstance = axios.create({
 
 // Debug interceptors met meer details
 axiosInstance.interceptors.request.use(request => {
-  console.log('🚀 API Request Interceptor:', {
-    configuredBaseURL: axiosInstance.defaults.baseURL,
-    requestUrl: request.url,
-    fullCalculatedUrl: `${axiosInstance.defaults.baseURL || ''}${request.url || ''}`,
+  console.log('🚀 API Request:', {
+    url: request.url,
     method: request.method,
     headers: request.headers,
     params: request.params
@@ -110,22 +108,20 @@ axiosInstance.interceptors.response.use(
 
 // Test functie om API bereikbaarheid te controleren
 const testApi = async (route: string) => {
-  const proxyRoute = `/api/directus${route}`;
   try {
-    console.log(`🔍 Testing API connection via proxy route: ${proxyRoute}`);
-    // Gebruik axiosInstance die geconfigureerd is met proxy baseURL
+    console.log(`🔍 Testing API connection to ${route}...`);
     const response = await axiosInstance.get(route, { 
       params: {
         'limit': 1
       }
     });
-    console.log(`✅ API Connection via proxy route ${proxyRoute} successful:`, {
+    console.log(`✅ API Connection to ${route} successful:`, {
       status: response.status,
       data: response.data
     });
     return { success: true, status: response.status };
   } catch (error: any) {
-    console.error(`❌ API Connection via proxy route ${proxyRoute} failed:`, {
+    console.error(`❌ API Connection to ${route} failed:`, {
       message: error.message,
       status: error.response?.status,
       data: error.response?.data
@@ -208,14 +204,13 @@ export const DirectusService = {
   },
 
   async getTopFavorites(period: string): Promise<FavoriteCount[]> {
-    const functionName = "[TopFavorites_FixedAPI_Proxy]"; // Update functienaam
+    const functionName = "[TopFavorites]"; 
     
     try {
       const startDate = getDateRange(period);
       console.log(`${functionName} Fetching for period: ${period}, Start date: ${startDate}`);
       
-      // Probeer eerst met Axios (die de proxy baseURL zou moeten gebruiken)
-      console.log(`${functionName} Poging 1: Axios request...`);
+      // Probeer met Axios
       const axiosResponse = await axiosInstance.get<DirectusResponse<any>>('/pinned_units', {
         params: {
           'fields': ['unit_id'],
@@ -245,16 +240,16 @@ export const DirectusService = {
         console.error(`${functionName} Axios request failed:`, axiosError.message);
     }
 
-    // Fallback: Probeer directe fetch via de proxy URL
-    console.log(`${functionName} Poging 2: Direct fetch via proxy...`);
+    // Fallback: Probeer directe fetch
+    console.log(`${functionName} Poging 2: Direct fetch...`);
     try {
-        const startDate = getDateRange(period); // Zorg dat startDate hier beschikbaar is
-        let fetchUrl = `/api/directus/items/pinned_units?fields[]=unit_id&limit=1000`; // Forceer proxy route
+        const startDate = getDateRange(period);
+        let fetchUrl = `${process.env.REACT_APP_API_URL}/items/pinned_units?fields[]=unit_id&limit=1000`;
         if (period !== 'all') {
           fetchUrl += `&filter[created_at][_gte]=${encodeURIComponent(startDate)}`;
         }
         
-        console.log(`${functionName} Fetch URL via Proxy: ${fetchUrl}`);
+        console.log(`${functionName} Fetch URL: ${fetchUrl}`);
         
         const response = await fetch(fetchUrl, { 
           headers: {
@@ -271,7 +266,7 @@ export const DirectusService = {
         const result = await response.json();
         
         if (result.data && result.data.length > 0) {
-          console.log(`${functionName} Direct fetch via proxy successful!`, result.data.length);
+          console.log(`${functionName} Direct fetch successful!`, result.data.length);
           // Verwerk resultaten
           const counts: Record<string, number> = {};
           for (const item of result.data) {
@@ -284,10 +279,10 @@ export const DirectusService = {
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
         } else {
-          console.log(`${functionName} Direct fetch via proxy returned no data.`);
+          console.log(`${functionName} Direct fetch returned no data.`);
         }
       } catch (fetchError: any) {
-        console.error(`${functionName} Fetch error via proxy:`, fetchError.message);
+        console.error(`${functionName} Fetch error:`, fetchError.message);
       }
 
     // Als alles faalt, fallback naar dummy data
